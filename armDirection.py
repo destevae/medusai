@@ -15,6 +15,21 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 700)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 550)
 cap.set(cv2.CAP_PROP_FPS, 35)
 
+def inZone1(x, y):
+    # zone 1 middle point is (230, 18)
+    return 162 <= x <= 212 and 0 <= y <= 35
+
+def inZone2(x, y):
+    # zone 2 middle point is (280, 59)
+    return 212 <= x <= 320 and 36 <= y <= 59
+
+def inZone3(x, y):
+    # zone 3 middle point is (372, 32)
+    return 321 <= x <= 403 and 0 <= y <= 92
+
+zones = [(230, 18), (280, 59), (372, 32)]
+
+
 # calculate direction vectors and determine direction of arm
 def computeDirectionOfArm(shoulderX, shoulderY, elbowX, elbowY, handX, handY, flipped):
     # convert coordinates to numpy arrays, calculate vectors
@@ -26,15 +41,34 @@ def computeDirectionOfArm(shoulderX, shoulderY, elbowX, elbowY, handX, handY, fl
     vec2 = hand - elbow  
     
     combinedVec = vec1 + vec2
+
+    return vec1, vec2, combinedVec
+
+def distance_point_to_line(pointX, pointY, lineStartX, lineStartY, lineEndX, lineEndY):
+    # Vector from the point to the start of the line
+    point_to_line_start = np.array([pointX - lineStartX, pointY - lineStartY])
+    # Vector representing the line
+    line_vector = np.array([lineEndX - lineStartX, lineEndY - lineStartY])
+
+    # Project the point-to-line-start vector onto the line vector to get the normalized distance
+    line_vector_norm = line_vector / np.linalg.norm(line_vector)
+    projection = np.dot(point_to_line_start, line_vector_norm)
+
+    # Find the closest point on the line segment
+    closest_point = np.array([lineStartX, lineStartY]) + projection * line_vector_norm
+
+    # Distance from the point to the closest point on the line
+    distance = np.linalg.norm(np.array([pointX, pointY]) - closest_point)
+    return distance
     
-    # normalize the combined vector
+    """ # normalize the combined vector
     norm = np.linalg.norm(combinedVec)
     if norm == 0:
         return "No movement detected"
     
-    normalizedVec = combinedVec / norm
+    normalizedVec = combinedVec / norm"""
     
-    # determine the direction
+    """# determine the direction
     direction = ""
     if abs(normalizedVec[1]) > abs(normalizedVec[0]): # y value greater than x value, must be vertical
         if normalizedVec[1] > 0:
@@ -55,7 +89,7 @@ def computeDirectionOfArm(shoulderX, shoulderY, elbowX, elbowY, handX, handY, fl
             if flipped:
                 direction = "left"
     
-    return direction
+    return direction"""
 
 
 
@@ -65,9 +99,7 @@ while cap.isOpened():
     success, frame = cap.read()
 
     if success:
-        # resize frame b/c my laptop is slow
-        frame = cv2.resize(frame, (frame.shape[1] // 2, frame.shape[0] // 2))
-        
+
         results = model(frame)
         
         # extract keypoints from results
@@ -96,7 +128,10 @@ while cap.isOpened():
                 # LEFT SHOULDER
                 xLeftShoulder = allKeypoints[0][5][0] 
                 yLeftShoulder = allKeypoints[0][5][1] 
-                
+
+                for (x, y) in zones:
+                    leftDistance = distance_point_to_line(x, y, xLeftShoulder, yLeftShoulder, xLeftHand, yLeftHand)
+
                 directionLeft = computeDirectionOfArm(xLeftShoulder, yLeftShoulder, xLeftElbow, yLeftElbow, xLeftHand, yLeftHand, False)
                 print("Direction of left arm:", directionLeft)
                 

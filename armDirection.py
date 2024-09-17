@@ -42,35 +42,17 @@ def computeDirectionOfArm(shoulderX, shoulderY, elbowX, elbowY, handX, handY, fl
     
     combinedVec = vec1 + vec2
 
-    return vec1, vec2, combinedVec
-
-def distance_point_to_line(pointX, pointY, lineStartX, lineStartY, lineEndX, lineEndY):
-    # Vector from the point to the start of the line
-    point_to_line_start = np.array([pointX - lineStartX, pointY - lineStartY])
-    # Vector representing the line
-    line_vector = np.array([lineEndX - lineStartX, lineEndY - lineStartY])
-
-    # Project the point-to-line-start vector onto the line vector to get the normalized distance
-    line_vector_norm = line_vector / np.linalg.norm(line_vector)
-    projection = np.dot(point_to_line_start, line_vector_norm)
-
-    # Find the closest point on the line segment
-    closest_point = np.array([lineStartX, lineStartY]) + projection * line_vector_norm
-
-    # Distance from the point to the closest point on the line
-    distance = np.linalg.norm(np.array([pointX, pointY]) - closest_point)
-    return distance
-    
-    """ # normalize the combined vector
+    # normalize the combined vector
     norm = np.linalg.norm(combinedVec)
     if norm == 0:
         return "No movement detected"
-    
-    normalizedVec = combinedVec / norm"""
-    
-    """# determine the direction
+
+    normalizedVec = combinedVec / norm
+
+
+    # determine the direction
     direction = ""
-    if abs(normalizedVec[1]) > abs(normalizedVec[0]): # y value greater than x value, must be vertical
+    if abs(normalizedVec[1]) > abs(normalizedVec[0]):  # y value greater than x value, must be vertical
         if normalizedVec[1] > 0:
             direction = "down"
             if flipped:
@@ -88,8 +70,25 @@ def distance_point_to_line(pointX, pointY, lineStartX, lineStartY, lineEndX, lin
             direction = "right"
             if flipped:
                 direction = "left"
-    
-    return direction"""
+
+    return direction
+
+def distance_point_to_line(pointX, pointY, lineStartX, lineStartY, lineEndX, lineEndY):
+    # Vector from the point to the start of the line
+    point_to_line_start = np.array([pointX - lineStartX, pointY - lineStartY])
+    # Vector representing the line
+    line_vector = np.array([lineEndX - lineStartX, lineEndY - lineStartY])
+
+    # Project the point-to-line-start vector onto the line vector to get the normalized distance
+    line_vector_norm = line_vector / np.linalg.norm(line_vector)
+    projection = np.dot(point_to_line_start, line_vector_norm)
+
+    # Find the closest point on the line segment
+    closest_point = np.array([lineStartX, lineStartY]) + projection * line_vector_norm
+
+    # Distance from the point to the closest point on the line
+    distance = np.linalg.norm(np.array([pointX, pointY]) - closest_point)
+    return distance
 
 
 
@@ -129,11 +128,19 @@ while cap.isOpened():
                 xLeftShoulder = allKeypoints[0][5][0] 
                 yLeftShoulder = allKeypoints[0][5][1] 
 
+                minDistance = float('inf')
+                minZone = 0
+                i = 0
                 for (x, y) in zones:
                     leftDistance = distance_point_to_line(x, y, xLeftShoulder, yLeftShoulder, xLeftHand, yLeftHand)
+                    if leftDistance < minDistance:
+                        minDistance = leftDistance
+                        minZone = i
+                    i += 1
 
-                directionLeft = computeDirectionOfArm(xLeftShoulder, yLeftShoulder, xLeftElbow, yLeftElbow, xLeftHand, yLeftHand, False)
-                print("Direction of left arm:", directionLeft)
+
+                # directionLeft = computeDirectionOfArm(xLeftShoulder, yLeftShoulder, xLeftElbow, yLeftElbow, xLeftHand, yLeftHand, False)
+                print("minimum zone and distance of left arm:", minZone, minDistance)
                 
                 # RIGHT HAND
                 xRightHand = allKeypoints[0][10][0]
@@ -145,10 +152,20 @@ while cap.isOpened():
                 
                 # RIGHT SHOULDER
                 xRightShoulder = allKeypoints[0][6][0] 
-                yRightShoulder = allKeypoints[0][6][1] 
+                yRightShoulder = allKeypoints[0][6][1]
+
+                minDistance = float('inf')
+                minZone = 0
+                i = 0
+                for (x, y) in zones:
+                    rightDistance = distance_point_to_line(x, y, xRightShoulder, yRightShoulder, xRightHand, yRightHand)
+                    if rightDistance < minDistance:
+                        minDistance = rightDistance
+                        minZone = i
+                    i += 1
                 
-                directionRight = computeDirectionOfArm(xRightHand, yRightHand, xRightElbow, yRightElbow, xRightShoulder, yRightShoulder, True)
-                print("Direction of right arm:", directionRight)
+                # directionRight = computeDirectionOfArm(xRightHand, yRightHand, xRightElbow, yRightElbow, xRightShoulder, yRightShoulder, True)
+                print("minimum zone and distance of left arm:", minZone, minDistance)
                 
             else:
                 print("Not enough keypoints detected")

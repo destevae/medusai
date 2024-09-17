@@ -58,6 +58,9 @@ def computeDirectionOfArm(shoulderX, shoulderY, elbowX, elbowY, handX, handY, fl
     return direction
 
 
+
+
+
 while cap.isOpened():
     success, frame = cap.read()
 
